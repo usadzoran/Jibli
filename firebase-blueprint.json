@@ -1,0 +1,113 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information and role",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "role": { "type": "string", "enum": ["customer", "driver", "admin"] },
+        "avatar_url": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "email", "role"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Supermarket product details",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "image_url": { "type": "string" },
+        "category_id": { "type": "string" },
+        "stock": { "type": "integer" },
+        "is_featured": { "type": "boolean" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "price", "category_id", "stock"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Product category",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "icon": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer order record",
+      "type": "object",
+      "properties": {
+        "customer_id": { "type": "string" },
+        "driver_id": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "picked_up", "delivered", "cancelled"] },
+        "subtotal": { "type": "number" },
+        "delivery_fee": { "type": "number" },
+        "total": { "type": "number" },
+        "payment_method": { "type": "string" },
+        "delivery_address": { "type": "string" },
+        "notes": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["customer_id", "status", "total", "delivery_address"]
+    },
+    "OrderItem": {
+      "title": "OrderItem",
+      "description": "Specific product in an order",
+      "type": "object",
+      "properties": {
+        "order_id": { "type": "string" },
+        "product_id": { "type": "string" },
+        "quantity": { "type": "integer" },
+        "unit_price": { "type": "number" }
+      },
+      "required": ["order_id", "product_id", "quantity", "unit_price"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Customer review for an order/driver",
+      "type": "object",
+      "properties": {
+        "order_id": { "type": "string" },
+        "customer_id": { "type": "string" },
+        "rating": { "type": "integer" },
+        "comment": { "type": "string" }
+      },
+      "required": ["order_id", "customer_id", "rating"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Product catalog"
+    },
+    "/categories/{categoryId}": {
+      "schema": "Category",
+      "description": "Product categories"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Customer orders"
+    },
+    "/orders/{orderId}/items/{itemId}": {
+      "schema": "OrderItem",
+      "description": "Items within an order"
+    },
+    "/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Customer reviews"
+    }
+  }
+}

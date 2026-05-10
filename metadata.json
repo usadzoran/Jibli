@@ -1,0 +1,10 @@
+{
+  "name": "Jibli",
+  "description": "Plateforme de livraison de courses à domicile en Algérie. Connectez-vous avec les supermarchés locaux et des chauffeurs livreurs pour des courses rapides et fiables.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "Firebase"
+  ]
+}
