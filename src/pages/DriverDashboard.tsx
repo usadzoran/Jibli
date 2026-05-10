@@ -15,7 +15,10 @@ export default function DriverDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!profile) return;
+    if (!profile || profile.status !== 'active') {
+      setLoading(false);
+      return;
+    }
 
     // Available orders (status pending)
     const availableQ = query(
@@ -45,6 +48,46 @@ export default function DriverDashboard() {
       unsubMy();
     };
   }, [profile]);
+
+  if (profile?.status === 'pending') {
+    return (
+      <div className="min-h-[calc(100vh-64px)] flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <div className="w-24 h-24 bg-yellow-50 rounded-[40px] flex items-center justify-center mx-auto mb-8 transform rotate-12">
+            <Clock className="w-12 h-12 text-yellow-500" />
+          </div>
+          <h1 className="text-3xl font-black text-gray-900 mb-4">Compte en attente</h1>
+          <p className="text-gray-500 mb-8 font-medium">
+            Votre inscription en tant que livreur a bien été reçue. Notre équipe examine actuellement vos documents. 
+            Vous recevrez un accès complet dès que votre compte sera approuvé.
+          </p>
+          <div className="p-6 bg-gray-50 rounded-3xl border border-gray-100 text-left space-y-3">
+             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Informations transmises</p>
+             <p className="text-sm"><strong>ID National:</strong> {profile.national_id}</p>
+             <p className="text-sm"><strong>Véhicule:</strong> {profile.vehicle_type}</p>
+             <p className="text-sm"><strong>Plaque:</strong> {profile.plate_number}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (profile?.status === 'rejected' || profile?.status === 'suspended') {
+    return (
+      <div className="min-h-[calc(100vh-64px)] flex items-center justify-center p-4">
+        <div className="text-center max-w-sm">
+          <div className="w-24 h-24 bg-red-50 rounded-[40px] flex items-center justify-center mx-auto mb-8 transform -rotate-12">
+            <Truck className="w-12 h-12 text-red-500" />
+          </div>
+          <h1 className="text-3xl font-black text-gray-900 mb-4">Accès Refusé</h1>
+          <p className="text-gray-500 mb-8 font-medium">
+            Votre compte chauffeur a été {profile.status === 'rejected' ? 'refusé' : 'suspendu'}. 
+            Veuillez contacter le support pour plus d'informations.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const ongoingOrders = myOrders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled');
   const historyOrders = myOrders.filter(o => o.status === 'delivered' || o.status === 'cancelled');

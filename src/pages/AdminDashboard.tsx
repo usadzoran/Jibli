@@ -1,20 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, orderBy, addDoc, updateDoc, deleteDoc, doc, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Product, Order, Category } from '../types';
+import { Product, Order, Category, UserProfile } from '../types';
 import { formatCurrency, cn } from '../lib/utils';
 import { 
   BarChart3, Package, Users, Truck, Plus, Search, 
-  Trash2, Edit3, Save, X, LayoutDashboard, ShoppingBag, Star
+  Trash2, Edit3, Save, X, LayoutDashboard, ShoppingBag, Star,
+  CheckCircle, XCircle, UserPlus, ShieldAlert
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'drivers'>('overview');
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [users, setUsers] = useState<UserProfile[]>([]);
   
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [newProduct, setNewProduct] = useState<Partial<Product>>({
@@ -37,13 +39,21 @@ export default function AdminDashboard() {
     const catUnsub = onSnapshot(collection(db, 'categories'), (snap) => {
       setCategories(snap.docs.map(d => ({ id: d.id, ...d.data() } as Category)));
     });
+    const userUnsub = onSnapshot(collection(db, 'users'), (snap) => {
+      setUsers(snap.docs.map(d => ({ id: d.id, ...d.data() } as UserProfile)));
+    });
 
     return () => {
       prodUnsub();
       orderUnsub();
       catUnsub();
+      userUnsub();
     };
   }, []);
+
+  const handleUpdateDriverStatus = async (userId: string, status: string) => {
+    await updateDoc(doc(db, 'users', userId), { status });
+  };
 
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +83,7 @@ export default function AdminDashboard() {
     { label: 'Revenu Total', value: formatCurrency(orders.reduce((sum, o) => sum + o.total, 0)), icon: BarChart3, color: 'text-blue-500 bg-blue-50' },
     { label: 'Commandes', value: orders.length, icon: ShoppingBag, color: 'text-[#22C55E] bg-[#22C55E]/10' },
     { label: 'Produits', value: products.length, icon: Package, color: 'text-[#FACC15] bg-[#FACC15]/10' },
-    { label: 'Livreurs Actifs', value: 12, icon: Truck, color: 'text-[#EF4444] bg-[#EF4444]/10' },
+    { label: 'Livreurs Actifs', value: users.filter(u => u.role === 'driver' && u.status === 'active').length, icon: Truck, color: 'text-[#EF4444] bg-[#EF4444]/10' },
   ];
 
   const chartData = [
@@ -123,6 +133,20 @@ export default function AdminDashboard() {
           >
             <ShoppingBag className="w-5 h-5" /> Commandes
           </button>
+          <button 
+            onClick={() => setActiveTab('drivers')}
+            className={cn(
+              "w-full flex items-center gap-3 px-6 py-4 rounded-2xl font-bold transition-all",
+              activeTab === 'drivers' ? "bg-[#22C55E] text-white shadow-lg shadow-[#22C55E]/20" : "text-gray-500 hover:bg-gray-50"
+            )}
+          >
+            <Users className="w-5 h-5" /> Chauffeurs
+            {users.filter(u => u.role === 'driver' && u.status === 'pending').length > 0 && (
+              <span className="ml-auto w-5 h-5 bg-[#EF4444] text-white rounded-full flex items-center justify-center text-[10px]">
+                {users.filter(u => u.role === 'driver' && u.status === 'pending').length}
+              </span>
+            )}
+          </button>
         </nav>
       </aside>
 
@@ -168,6 +192,72 @@ export default function AdminDashboard() {
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'drivers' && (
+            <motion.div key="drivers" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+              <h2 className="text-3xl font-black text-gray-900 mb-10">Gestion des Chauffeurs</h2>
+              
+              <div className="bg-white rounded-[40px] overflow-hidden border border-gray-100 shadow-sm">
+                <table className="w-full text-left">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-8 py-6 text-sm font-bold text-gray-400 uppercase tracking-widest">Nom / Contact</th>
+                      <th className="px-8 py-6 text-sm font-bold text-gray-400 uppercase tracking-widest">Véhicule</th>
+                      <th className="px-8 py-6 text-sm font-bold text-gray-400 uppercase tracking-widest">Status</th>
+                      <th className="px-8 py-6 text-sm font-bold text-gray-400 uppercase tracking-widest text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {users.filter(u => u.role === 'driver').map((u) => (
+                      <tr key={u.id} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="px-8 py-6">
+                           <div>
+                             <p className="font-bold text-gray-900">{u.name}</p>
+                             <p className="text-xs text-gray-500">{u.phone}</p>
+                             {u.national_id && <p className="text-[10px] text-gray-400">ID: {u.national_id}</p>}
+                           </div>
+                        </td>
+                        <td className="px-8 py-6">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-bold text-gray-700 capitalize">{u.vehicle_type}</span>
+                            <span className="text-xs text-gray-400 font-mono">{u.plate_number}</span>
+                          </div>
+                        </td>
+                        <td className="px-8 py-6">
+                           <span className={cn(
+                             "px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest",
+                             u.status === 'active' ? "bg-green-50 text-green-500" :
+                             u.status === 'pending' ? "bg-yellow-50 text-yellow-500" : "bg-red-50 text-red-500"
+                           )}>
+                             {u.status}
+                           </span>
+                        </td>
+                        <td className="px-8 py-6 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                             {u.status === 'pending' && (
+                               <button onClick={() => handleUpdateDriverStatus(u.id, 'active')} className="p-2 bg-green-50 text-green-500 rounded-xl hover:bg-green-500 hover:text-white transition-all">
+                                 <CheckCircle className="w-5 h-5" />
+                               </button>
+                             )}
+                             {u.status !== 'rejected' && u.status !== 'suspended' && (
+                               <button onClick={() => handleUpdateDriverStatus(u.id, 'suspended')} className="p-2 bg-yellow-50 text-yellow-500 rounded-xl hover:bg-yellow-500 hover:text-white transition-all">
+                                 <ShieldAlert className="w-5 h-5" />
+                               </button>
+                             )}
+                             {(u.status === 'suspended' || u.status === 'pending') && (
+                               <button onClick={() => handleUpdateDriverStatus(u.id, 'rejected')} className="p-2 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all">
+                                 <XCircle className="w-5 h-5" />
+                               </button>
+                             )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </motion.div>
           )}

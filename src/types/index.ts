@@ -1,12 +1,19 @@
 export type UserRole = 'customer' | 'driver' | 'admin';
+export type UserStatus = 'active' | 'pending' | 'rejected' | 'suspended';
 
 export interface UserProfile {
   id: string;
   name: string;
   email: string;
-  phone?: string;
+  phone: string;
   role: UserRole;
+  status: UserStatus;
   avatar_url?: string;
+  address?: string;
+  // Driver specific
+  national_id?: string;
+  vehicle_type?: string;
+  plate_number?: string;
   created_at?: string;
 }
 

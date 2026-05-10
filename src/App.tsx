@@ -42,8 +42,8 @@ function AppRoutes() {
           <Route path="/checkout" element={profile ? <Checkout /> : <Navigate to="/auth" />} />
           <Route path="/orders" element={profile ? <Orders /> : <Navigate to="/auth" />} />
           
-          {/* Admin Routes */}
-          <Route path="/admin/*" element={profile?.role === 'admin' ? <AdminDashboard /> : <Navigate to="/" />} />
+          {/* Admin Routes (Hidden) */}
+          <Route path="/secure-admin-jibli/*" element={profile?.role === 'admin' ? <AdminDashboard /> : <Navigate to="/" />} />
           
           {/* Driver Routes */}
           <Route path="/driver/*" element={profile?.role === 'driver' ? <DriverDashboard /> : <Navigate to="/" />} />

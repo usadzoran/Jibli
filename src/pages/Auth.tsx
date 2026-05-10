@@ -14,6 +14,12 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  // Driver specific fields
+  const [nationalId, setNationalId] = useState('');
+  const [vehicleType, setVehicleType] = useState('motorcycle');
+  const [plateNumber, setPlateNumber] = useState('');
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -48,6 +54,11 @@ export default function Auth() {
           email,
           phone,
           role,
+          status: role === 'driver' ? 'pending' : 'active',
+          address: role === 'customer' ? address : '',
+          national_id: role === 'driver' ? nationalId : '',
+          vehicle_type: role === 'driver' ? vehicleType : '',
+          plate_number: role === 'driver' ? plateNumber : '',
           created_at: new Date().toISOString(),
         };
 
@@ -73,7 +84,9 @@ export default function Auth() {
           id: user.uid,
           name: user.displayName || 'Utilisateur',
           email: user.email || '',
+          phone: '',
           role: 'customer',
+          status: 'active',
           created_at: new Date().toISOString(),
         };
         await setDoc(doc(db, 'users', user.uid), userProfile);
@@ -101,6 +114,7 @@ export default function Auth() {
             </h2>
             <p className="text-gray-500">
               {isLogin ? 'Heureux de vous revoir parmi nous.' : 'Commencez vos courses en toute simplicité.'}
+              {!isLogin && role === 'driver' && <span className="block text-[#EF4444] font-bold mt-2">Inscription Chauffeur - Soumis à approbation</span>}
             </p>
           </div>
 
@@ -155,6 +169,50 @@ export default function Auth() {
                     onChange={(e) => setPhone(e.target.value)}
                   />
                 </div>
+
+                {role === 'customer' && (
+                  <div className="relative">
+                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      required
+                      placeholder="Adresse de livraison par défaut"
+                      className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#22C55E]/20 focus:border-[#22C55E] transition-all"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                    />
+                  </div>
+                )}
+
+                {role === 'driver' && (
+                  <>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Numéro de Carte Nationale"
+                      className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#22C55E]/20 focus:border-[#22C55E] transition-all"
+                      value={nationalId}
+                      onChange={(e) => setNationalId(e.target.value)}
+                    />
+                    <select
+                      className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#22C55E]/20 focus:border-[#22C55E] transition-all"
+                      value={vehicleType}
+                      onChange={(e) => setVehicleType(e.target.value)}
+                    >
+                      <option value="motorcycle">Moto</option>
+                      <option value="car">Voiture</option>
+                      <option value="bicycle">Vélo</option>
+                    </select>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Plaque d'immatriculation"
+                      className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#22C55E]/20 focus:border-[#22C55E] transition-all"
+                      value={plateNumber}
+                      onChange={(e) => setPlateNumber(e.target.value)}
+                    />
+                  </>
+                )}
               </>
             )}
 

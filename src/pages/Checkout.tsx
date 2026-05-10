@@ -13,7 +13,7 @@ export default function Checkout() {
   const { items, subtotal, deliveryFee, total, clearCart } = useCart();
   const navigate = useNavigate();
   
-  const [address, setAddress] = useState('');
+  const [address, setAddress] = useState(profile?.address || '');
   const [phone, setPhone] = useState(profile?.phone || '');
   const [paymentMethod, setPaymentMethod] = useState('cod');
   const [notes, setNotes] = useState('');

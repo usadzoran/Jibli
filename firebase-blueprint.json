@@ -10,10 +10,15 @@
         "email": { "type": "string" },
         "phone": { "type": "string" },
         "role": { "type": "string", "enum": ["customer", "driver", "admin"] },
+        "status": { "type": "string", "enum": ["active", "pending", "rejected", "suspended"] },
+        "address": { "type": "string" },
+        "national_id": { "type": "string" },
+        "vehicle_type": { "type": "string" },
+        "plate_number": { "type": "string" },
         "avatar_url": { "type": "string" },
         "created_at": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "name", "email", "role"]
+      "required": ["id", "name", "email", "role", "status"]
     },
     "Product": {
       "title": "Product",

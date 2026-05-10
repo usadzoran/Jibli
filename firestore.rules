@@ -6,8 +6,10 @@ service cloud.firestore {
     // ---------------------------------------------------------
     function isSignedIn() { return request.auth != null; }
     function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
-    function isAdmin() { return isVerified() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'; }
-    function isDriver() { return isVerified() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'driver'; }
+    function userProfile() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function isAdmin() { return isSignedIn() && userProfile().role == 'admin'; }
+    function isDriver() { return isSignedIn() && userProfile().role == 'driver' && userProfile().status == 'active'; }
+    function isCustomer() { return isSignedIn() && userProfile().role == 'customer'; }
     function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
     
     function isValidId(id) { 
@@ -28,21 +30,19 @@ service cloud.firestore {
     // USERS
     // ---------------------------------------------------------
     function isValidUser(data) {
-      return data.keys().hasAll(['id', 'name', 'email', 'role']) &&
+      return data.keys().hasAll(['id', 'name', 'email', 'role', 'status']) &&
              data.id == request.auth.uid &&
              data.email == request.auth.token.email &&
              data.role in ['customer', 'driver', 'admin'] &&
+             data.status in ['active', 'pending', 'rejected', 'suspended'] &&
              data.name is string && data.name.size() > 0 && data.name.size() <= 100;
     }
 
     match /users/{userId} {
-      allow get: if isSignedIn();
+      allow get: if isSignedIn() && (isOwner(userId) || isAdmin() || (isDriver() && exists(/databases/$(database)/documents/orders/$(request.auth.uid)))); // Slightly complex, driver can see customer only if assigned
       allow list: if isAdmin();
       allow create: if isSignedIn() && isValidUser(incoming()) && incoming().role != 'admin'; 
-      // Admin creation would usually be manual or via a special system
-      allow update: if isOwner(userId) && isValidUser(incoming()) &&
-                    incoming().role == existing().role && // Role cannot be changed by user
-                    incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'avatar_url']);
+      allow update: if (isOwner(userId) && incoming().status == existing().status && incoming().role == existing().role && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'avatar_url', 'address'])) || isAdmin();
       allow delete: if false;
     }
 
@@ -58,7 +58,7 @@ service cloud.firestore {
     }
 
     match /products/{productId} {
-      allow read: if true; // Public catalog
+      allow read: if true; 
       allow write: if isAdmin() && isValidProduct(incoming());
     }
 
@@ -82,13 +82,13 @@ service cloud.firestore {
     }
 
     match /orders/{orderId} {
-      allow get: if isSignedIn() && (isOwner(existing().customer_id) || isDriver() || isAdmin());
+      allow get: if isSignedIn() && (isOwner(existing().customer_id) || (isDriver() && (existing().status == 'pending' || existing().driver_id == request.auth.uid)) || isAdmin());
       allow list: if isSignedIn() && (
         (isOwner(resource.data.customer_id)) ||
         (isDriver() && (resource.data.status == 'pending' || resource.data.driver_id == request.auth.uid)) ||
         (isAdmin())
       );
-      allow create: if isVerified() && isValidOrder(incoming());
+      allow create: if isCustomer() && isValidOrder(incoming());
       allow update: if isSignedIn() && (
         // Customer canceling
         (isOwner(existing().customer_id) && 
@@ -96,7 +96,7 @@ service cloud.firestore {
          incoming().status == 'cancelled' && 
          existing().status == 'pending') ||
         
-        // Driver accepting
+        // Driver accepting - only if active
         (isDriver() && existing().status == 'pending' && 
          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'driver_id']) && 
          incoming().status == 'accepted' && 
